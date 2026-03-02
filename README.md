@@ -1,6 +1,6 @@
 # Civicomfy for Automatic1111 (Stable Diffusion WebUI)
 
-A port of the [Civicomfy](https://github.com/Civicomfy) ComfyUI extension to **Stable Diffusion AUTOMATIC1111 WebUI**.
+A port of the [Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git) ComfyUI extension to **Stable Diffusion AUTOMATIC1111 WebUI**.
 
 ## Features
 
@@ -15,14 +15,14 @@ A port of the [Civicomfy](https://github.com/Civicomfy) ComfyUI extension to **S
 
 1. Open your A1111 WebUI
 2. Go to **Extensions → Install from URL**
-3. Paste: `https://github.com/YOUR_USERNAME/civicomfy-a1111`
+3. Paste: `https://github.com/vergil-sparda0701/civicomfy_A1111_Port`
 4. Click **Install**, then **Apply and restart UI**
 
 Or clone manually into your `extensions/` folder:
 
 ```bash
 cd stable-diffusion-webui/extensions
-git clone https://github.com/YOUR_USERNAME/civicomfy-a1111
+git clone https://github.com/vergil-sparda0701/civicomfy_A1111_Port
 ```
 
 ## Usage
@@ -91,4 +91,4 @@ The extension automatically maps Civitai model types to A1111's directories:
 
 ## Credits
 
-Based on [Civicomfy](https://github.com/Civicomfy) by its original authors.
+Based on [Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git) by its original authors.
