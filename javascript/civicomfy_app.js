@@ -39,7 +39,7 @@
     };
 
     const SETTINGS_COOKIE = 'civicomfy_settings';
-    function getDefaultSettings() { return { apiKey: '', numConnections: 1, defaultModelType: 'checkpoint', autoOpenStatusTab: false, hideMatureInSearch: true, nsfwBlurMinLevel: 4, autoInjectTriggers: true }; }
+    function getDefaultSettings() { return { apiKey: '', numConnections: 1, defaultModelType: 'checkpoint', autoOpenStatusTab: false, hideMatureInSearch: true, nsfwBlurMinLevel: 4, autoInjectTriggers: true, showNsfwUnblurred: false }; }
     function loadSettings() { try { const r = Cookies.get(SETTINGS_COOKIE); if (r) return { ...getDefaultSettings(), ...JSON.parse(r) }; } catch (_) {} return getDefaultSettings(); }
     function saveSettings(s) { Cookies.set(SETTINGS_COOKIE, JSON.stringify(s)); }
 
@@ -105,6 +105,8 @@
 /* Thumbnail */
 .civicomfy-card-thumb{position:relative;width:160px;min-width:160px;min-height:160px;background:#111;flex-shrink:0;overflow:hidden;align-self:stretch}
 .civicomfy-card-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.civicomfy-card-thumb img.civicomfy-nsfw-blur{filter:blur(8px)}
+.civicomfy-nsfw-show-all .civicomfy-card-thumb img.civicomfy-nsfw-blur{filter:none}
 .civicomfy-search-card:hover .civicomfy-card-thumb img{transform:scale(1.04)}
 .civicomfy-card-thumb-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5em;color:#333}
 .civicomfy-card-badge-type{position:absolute;bottom:6px;left:6px;background:rgba(92,138,255,.9);color:#fff;font-size:.68em;padding:2px 9px;border-radius:10px;font-weight:700;letter-spacing:.3px}
@@ -268,7 +270,8 @@
           <div class="civicomfy-form-group inline"><input type="checkbox" id="civicomfy-settings-auto-open" class="civicomfy-checkbox"><label for="civicomfy-settings-auto-open">Switch to Status tab after starting download</label></div>
           <div class="civicomfy-form-group inline"><input type="checkbox" id="civicomfy-settings-hide-mature" class="civicomfy-checkbox" ${s.hideMatureInSearch ? 'checked' : ''}><label for="civicomfy-settings-hide-mature">Hide Mature (R-rated) images in search</label></div>
           <div class="civicomfy-form-group inline"><input type="checkbox" id="civicomfy-settings-auto-inject" class="civicomfy-checkbox" ${s.autoInjectTriggers !== false ? 'checked' : ''}><label for="civicomfy-settings-auto-inject">Auto-add trigger words to the prompt upon completion of download</label></div>
-          <div class="civicomfy-form-group"><label>NSFW Blur Threshold</label><input type="number" id="civicomfy-settings-nsfw-threshold" class="civicomfy-input" value="${s.nsfwBlurMinLevel || 4}" min="0" max="128" step="1"><p class="civicomfy-hint">Blur thumbnails when nsfwLevel &ge; this value.</p></div>
+          <div class="civicomfy-form-group inline"><input type="checkbox" id="civicomfy-settings-show-nsfw-unblurred" class="civicomfy-checkbox" ${s.showNsfwUnblurred ? 'checked' : ''}><label for="civicomfy-settings-show-nsfw-unblurred">Show NSFW images without blur (18+)</label></div>
+         <div class="civicomfy-form-group"><label>NSFW Blur Threshold</label><input type="number" id="civicomfy-settings-nsfw-threshold" class="civicomfy-input" value="${s.nsfwBlurMinLevel || 4}" min="0" max="128" step="1"><p class="civicomfy-hint">Blur thumbnails when nsfwLevel &ge; this value (ignored if the option above is enabled).</p></div>
         </div>
       </div>
       <button id="civicomfy-settings-save" class="civicomfy-button primary" style="margin-top:20px">Save Settings</button>
@@ -315,7 +318,7 @@
         tryInsert(); setTimeout(tryInsert, 1000); setTimeout(tryInsert, 3000);
     }
 
-    function openModal() { overlay.classList.add('open'); startStatusPolling(); loadAndPopulateSubdirs(); }
+    function openModal() { overlay.classList.add('open'); startStatusPolling(); loadAndPopulateSubdirs(); if (settings.showNsfwUnblurred) overlay.classList.add('civicomfy-nsfw-show-all'); else overlay.classList.remove('civicomfy-nsfw-show-all'); }
     function closeModal() { overlay.classList.remove('open'); stopStatusPolling(); }
 
     function switchTab(t) {
@@ -536,7 +539,7 @@
         const tags = (item.tags || []).slice(0, 5).map(t => typeof t === 'object' ? (t.name || '') : String(t)).filter(Boolean);
 
         const nsfwLevel = (item.images && item.images[0] && item.images[0].nsfwLevel) || 1;
-        const blur = nsfwLevel >= (settings.nsfwBlurMinLevel || 4);
+        const blur = !settings.showNsfwUnblurred && nsfwLevel >= (settings.nsfwBlurMinLevel || 4);
         const modelId = item.id || '';
 
         // Build versions list — use modelVersions array if present, else fall back to single version
@@ -559,7 +562,7 @@
 
         return `<div class="civicomfy-search-card" data-model-id="${modelId}">
   <div class="civicomfy-card-thumb">
-    ${thumb ? `<img src="${escHtml(thumb)}" alt="${name}" ${blur ? 'style="filter:blur(8px)"' : ''} loading="lazy" onerror="this.style.display='none'">` : `<div class="civicomfy-card-thumb-ph">🎨</div>`}
+    ${thumb ? `<img src="${escHtml(thumb)}" alt="${name}" ${blur ? 'class="civicomfy-nsfw-blur"' : ''} loading="lazy" onerror="this.style.display='none'">` : `<div class="civicomfy-card-thumb-ph">🎨</div>`}
     ${type ? `<span class="civicomfy-card-badge-type">${type}</span>` : ''}
     ${blur ? `<span class="civicomfy-card-badge-nsfw">NSFW</span>` : ''}
   </div>
@@ -819,14 +822,21 @@
         if (q('civicomfy-settings-auto-open')) q('civicomfy-settings-auto-open').checked = settings.autoOpenStatusTab || false;
         if (q('civicomfy-settings-hide-mature')) q('civicomfy-settings-hide-mature').checked = settings.hideMatureInSearch !== false;
         if (q('civicomfy-settings-nsfw-threshold')) q('civicomfy-settings-nsfw-threshold').value = settings.nsfwBlurMinLevel || 4;
+        if (q('civicomfy-settings-show-nsfw-unblurred')) q('civicomfy-settings-show-nsfw-unblurred').checked = settings.showNsfwUnblurred === true;
         if (q('civicomfy-settings-auto-inject')) q('civicomfy-settings-auto-inject').checked = settings.autoInjectTriggers !== false;
     }
 
     function handleSettingsSave() {
         const q = id => overlay.querySelector('#' + id);
-        settings = { ...settings, apiKey: (q('civicomfy-settings-api-key')?.value || '').trim(), autoOpenStatusTab: q('civicomfy-settings-auto-open')?.checked || false, hideMatureInSearch: q('civicomfy-settings-hide-mature')?.checked !== false, nsfwBlurMinLevel: parseInt(q('civicomfy-settings-nsfw-threshold')?.value || '4', 10), defaultModelType: q('civicomfy-settings-default-type')?.value || 'checkpoint', autoInjectTriggers: q('civicomfy-settings-auto-inject')?.checked !== false };
+        settings = { ...settings, apiKey: (q('civicomfy-settings-api-key')?.value || '').trim(), autoOpenStatusTab: q('civicomfy-settings-auto-open')?.checked || false, hideMatureInSearch: q('civicomfy-settings-hide-mature')?.checked !== false, nsfwBlurMinLevel: parseInt(q('civicomfy-settings-nsfw-threshold')?.value || '4', 10), showNsfwUnblurred: q('civicomfy-settings-show-nsfw-unblurred')?.checked === true, defaultModelType: q('civicomfy-settings-default-type')?.value || 'checkpoint', autoInjectTriggers: q('civicomfy-settings-auto-inject')?.checked !== false };
         saveSettings(settings);
-        showToast('✅ Settings saved.', 'success');
+        showToast('\u2705 Settings saved.', 'success');
+        // Instantly update blur on all currently rendered NSFW thumbnails
+        if (settings.showNsfwUnblurred) {
+            overlay.classList.add('civicomfy-nsfw-show-all');
+        } else {
+            overlay.classList.remove('civicomfy-nsfw-show-all');
+        }
     }
 
     function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
