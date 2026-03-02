@@ -1,6 +1,6 @@
 # Civicomfy for Automatic1111 (Stable Diffusion WebUI)
 
-A port of the [Civicomfy]([https://github.com/Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git)) ComfyUI extension to **Stable Diffusion AUTOMATIC1111 WebUI**.
+A port of the [Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git) ComfyUI extension to **Stable Diffusion AUTOMATIC1111 WebUI**.
 
 ## Features
 
@@ -91,4 +91,4 @@ The extension automatically maps Civitai model types to A1111's directories:
 
 ## Credits
 
-Based on [Civicomfy]([https://github.com/Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git)) by its original authors.
+Based on [Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git) by its original authors.
