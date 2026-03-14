@@ -92,3 +92,13 @@ The extension automatically maps Civitai model types to A1111's directories:
 ## Credits
 
 Based on [Civicomfy](https://github.com/MoonGoblinDev/Civicomfy.git) by its original authors.
+
+---
+
+## ☕ Support the project
+
+If this extension saves you time and you'd like to support its development, a coffee is always appreciated!
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/danielgs20019)
+
+Every contribution helps keep the project maintained and motivates new features. Thank you! 🙏
