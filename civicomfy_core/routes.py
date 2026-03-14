@@ -12,6 +12,10 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 
+# Extension root — two levels up from this file (civicomfy_core/routes.py)
+EXTENSION_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+SETTINGS_FILE = os.path.join(EXTENSION_ROOT, "civicomfy_settings.json")
+
 def register_routes(app):
     """Register all Civicomfy API routes with the FastAPI app."""
 
@@ -571,6 +575,35 @@ def register_routes(app):
                 return JSONResponse({"success": False, "error": "Missing download_id"}, status_code=400)
             result = download_manager.open_containing_folder(download_id)
             return JSONResponse(result)
+        except Exception as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+    # -------------------------------------------------- #
+    # GET /civicomfy/settings  — load persisted settings
+    # -------------------------------------------------- #
+    @app.get("/civicomfy/settings")
+    async def route_get_settings():
+        try:
+            if os.path.exists(SETTINGS_FILE):
+                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                return JSONResponse({"success": True, "settings": saved})
+            return JSONResponse({"success": True, "settings": {}})
+        except Exception as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+    # -------------------------------------------------- #
+    # POST /civicomfy/settings  — persist settings to disk
+    # -------------------------------------------------- #
+    @app.post("/civicomfy/settings")
+    async def route_save_settings(request: Request):
+        try:
+            data = await request.json()
+            os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
+            with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            return JSONResponse({"success": True})
         except Exception as e:
             return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 

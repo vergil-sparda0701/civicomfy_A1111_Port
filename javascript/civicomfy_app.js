@@ -31,6 +31,8 @@
         retryDownload: (downloadId) => API._post('/civicomfy/retry', { download_id: downloadId }),
         openPath: (downloadId) => API._post('/civicomfy/open_path', { download_id: downloadId }),
         clearHistory: () => API._post('/civicomfy/clear_history', {}),
+        loadSettings: () => API._get('/civicomfy/settings'),
+        saveSettings: (s) => API._post('/civicomfy/settings', s),
     };
 
     const Cookies = {
@@ -40,8 +42,33 @@
 
     const SETTINGS_COOKIE = 'civicomfy_settings';
     function getDefaultSettings() { return { apiKey: '', numConnections: 1, defaultModelType: 'checkpoint', autoOpenStatusTab: false, hideMatureInSearch: true, nsfwBlurMinLevel: 4, autoInjectTriggers: true, showNsfwUnblurred: false }; }
-    function loadSettings() { try { const r = Cookies.get(SETTINGS_COOKIE); if (r) return { ...getDefaultSettings(), ...JSON.parse(r) }; } catch (_) {} return getDefaultSettings(); }
-    function saveSettings(s) { Cookies.set(SETTINGS_COOKIE, JSON.stringify(s)); }
+
+    // Load from cookie immediately (fast, available before server responds)
+    function loadSettingsFromCookie() {
+        try { const r = Cookies.get(SETTINGS_COOKIE); if (r) return { ...getDefaultSettings(), ...JSON.parse(r) }; } catch (_) {}
+        return getDefaultSettings();
+    }
+    function loadSettings() { return loadSettingsFromCookie(); }
+
+    // Save to both server (persistent) and cookie (fast next-load)
+    function saveSettings(s) {
+        Cookies.set(SETTINGS_COOKIE, JSON.stringify(s));
+        API.saveSettings(s).catch(err => console.warn('[Civicomfy] Could not persist settings to server:', err));
+    }
+
+    // Load settings from server and merge (called async after init)
+    async function syncSettingsFromServer() {
+        try {
+            const res = await API.loadSettings();
+            if (res && res.success && res.settings && Object.keys(res.settings).length > 0) {
+                settings = { ...getDefaultSettings(), ...res.settings };
+                // Update cookie with server values so next load is fast
+                Cookies.set(SETTINGS_COOKIE, JSON.stringify(settings));
+                applySettingsToForm();
+                console.log('[Civicomfy] Settings loaded from server.');
+            }
+        } catch (e) { console.warn('[Civicomfy] Could not load settings from server, using cookie/defaults.', e); }
+    }
 
     // ---- Smart Query Parser ----
     // Detects patterns like "morrigan outfit daniel20019" where the last token looks like a username handle
@@ -191,6 +218,8 @@
         createOverlay();
         createOpenButton();
         loadModelTypesAndBaseModels();
+        // Async: override cookie values with server-persisted settings
+        syncSettingsFromServer();
     }
 
     function injectCSS() {
