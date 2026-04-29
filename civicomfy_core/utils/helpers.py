@@ -64,7 +64,7 @@ def parse_civitai_input(url_or_id: str):
             else:
                 return None, None
 
-        if parsed_url.netloc and "civitai.com" not in parsed_url.netloc.lower():
+        if parsed_url.netloc and "civitai.com" not in parsed_url.netloc.lower() and "civitai.red" not in parsed_url.netloc.lower():
             return None, None
 
         path_parts = [p for p in parsed_url.path.split('/') if p]

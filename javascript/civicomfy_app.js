@@ -41,7 +41,7 @@
     };
 
     const SETTINGS_COOKIE = 'civicomfy_settings';
-    function getDefaultSettings() { return { apiKey: '', numConnections: 1, defaultModelType: 'checkpoint', autoOpenStatusTab: false, hideMatureInSearch: true, nsfwBlurMinLevel: 4, autoInjectTriggers: true, showNsfwUnblurred: false }; }
+    function getDefaultSettings() { return { apiKey: '', numConnections: 1, defaultModelType: 'checkpoint', autoOpenStatusTab: false, hideMatureInSearch: true, nsfwBlurMinLevel: 4, autoInjectTriggers: true, showNsfwUnblurred: false, preferredDomain: 'civitai.com' }; }
 
     // Load from cookie immediately (fast, available before server responds)
     function loadSettingsFromCookie() {
@@ -243,7 +243,7 @@
     </div>
     <!-- DOWNLOAD TAB -->
     <div id="civicomfy-tab-download" class="civicomfy-tab-content active">
-      <div class="civicomfy-form-group"><label>Model URL or ID</label><input type="text" id="civicomfy-model-url" class="civicomfy-input" placeholder="https://civitai.com/models/12345 or just the ID"></div>
+      <div class="civicomfy-form-group"><label>Model URL or ID</label><input type="text" id="civicomfy-model-url" class="civicomfy-input" placeholder="https://${s.preferredDomain || 'civitai.com'}/models/12345 or just the ID"></div>
       <p class="civicomfy-hint">You can specify a version with ?modelVersionId=xxxxx in the URL or the field below.</p>
       <div class="civicomfy-form-row">
         <div class="civicomfy-form-group"><label>Model Type (Save Location)</label><select id="civicomfy-model-type" class="civicomfy-select" required></select></div>
@@ -293,6 +293,7 @@
           <h4>API &amp; Defaults</h4>
           <div class="civicomfy-form-group"><label>Civitai API Key (Optional)</label><input type="password" id="civicomfy-settings-api-key" class="civicomfy-input" placeholder="For authenticated access" autocomplete="new-password"><p class="civicomfy-hint">Leave blank to use env <code>CIVITAI_API_KEY</code>.</p></div>
           <div class="civicomfy-form-group"><label>Default Model Type</label><select id="civicomfy-settings-default-type" class="civicomfy-select"></select></div>
+          <div class="civicomfy-form-group"><label>Preferred Domain</label><select id="civicomfy-settings-preferred-domain" class="civicomfy-select"><option value="civitai.com" ${s.preferredDomain !== 'civitai.red' ? 'selected' : ''}>civitai.com</option><option value="civitai.red" ${s.preferredDomain === 'civitai.red' ? 'selected' : ''}>civitai.red</option></select></div>
         </div>
         <div class="civicomfy-settings-section">
           <h4>Interface &amp; Search</h4>
@@ -612,7 +613,7 @@
     ${triggerStr ? `<div class="civicomfy-card-triggers"><b>Triggers:</b> ${escHtml(triggerStr)}</div>` : ''}
   </div>
   <div class="civicomfy-card-versions">
-    <button class="civicomfy-view-link" data-civitai-url="https://civitai.com/models/${modelId}">View ↗</button>
+    <button class="civicomfy-view-link" data-civitai-url="https://${settings.preferredDomain || 'civitai.com'}/models/${modelId}">View ↗</button>
     ${versions.length > 0 ? `
     <div class="civicomfy-ver-row" data-model-id="${modelId}">
       <div class="civicomfy-ver-select-wrap">
@@ -853,11 +854,12 @@
         if (q('civicomfy-settings-nsfw-threshold')) q('civicomfy-settings-nsfw-threshold').value = settings.nsfwBlurMinLevel || 4;
         if (q('civicomfy-settings-show-nsfw-unblurred')) q('civicomfy-settings-show-nsfw-unblurred').checked = settings.showNsfwUnblurred === true;
         if (q('civicomfy-settings-auto-inject')) q('civicomfy-settings-auto-inject').checked = settings.autoInjectTriggers !== false;
+        if (q('civicomfy-settings-preferred-domain')) q('civicomfy-settings-preferred-domain').value = settings.preferredDomain || 'civitai.com';
     }
 
     function handleSettingsSave() {
         const q = id => overlay.querySelector('#' + id);
-        settings = { ...settings, apiKey: (q('civicomfy-settings-api-key')?.value || '').trim(), autoOpenStatusTab: q('civicomfy-settings-auto-open')?.checked || false, hideMatureInSearch: q('civicomfy-settings-hide-mature')?.checked !== false, nsfwBlurMinLevel: parseInt(q('civicomfy-settings-nsfw-threshold')?.value || '4', 10), showNsfwUnblurred: q('civicomfy-settings-show-nsfw-unblurred')?.checked === true, defaultModelType: q('civicomfy-settings-default-type')?.value || 'checkpoint', autoInjectTriggers: q('civicomfy-settings-auto-inject')?.checked !== false };
+        settings = { ...settings, apiKey: (q('civicomfy-settings-api-key')?.value || '').trim(), autoOpenStatusTab: q('civicomfy-settings-auto-open')?.checked || false, hideMatureInSearch: q('civicomfy-settings-hide-mature')?.checked !== false, nsfwBlurMinLevel: parseInt(q('civicomfy-settings-nsfw-threshold')?.value || '4', 10), showNsfwUnblurred: q('civicomfy-settings-show-nsfw-unblurred')?.checked === true, defaultModelType: q('civicomfy-settings-default-type')?.value || 'checkpoint', autoInjectTriggers: q('civicomfy-settings-auto-inject')?.checked !== false, preferredDomain: q('civicomfy-settings-preferred-domain')?.value || 'civitai.com' };
         saveSettings(settings);
         showToast('\u2705 Settings saved.', 'success');
         // Instantly update blur on all currently rendered NSFW thumbnails
