@@ -243,7 +243,7 @@
     </div>
     <!-- DOWNLOAD TAB -->
     <div id="civicomfy-tab-download" class="civicomfy-tab-content active">
-      <div class="civicomfy-form-group"><label>Model URL or ID</label><input type="text" id="civicomfy-model-url" class="civicomfy-input" placeholder="https://${s.preferredDomain || 'civitai.com'}/models/12345 or just the ID"></div>
+      <div class="civicomfy-form-group"><label>Model URL or ID</label><input type="text" id="civicomfy-model-url" class="civicomfy-input" placeholder="https://civitai.com/models/1234... (o civitai.red) o solo el ID"></div>
       <p class="civicomfy-hint">You can specify a version with ?modelVersionId=xxxxx in the URL or the field below.</p>
       <div class="civicomfy-form-row">
         <div class="civicomfy-form-group"><label>Model Type (Save Location)</label><select id="civicomfy-model-type" class="civicomfy-select" required></select></div>
