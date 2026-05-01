@@ -25,8 +25,9 @@ class CivitaiAPI:
 
     def _request(self, method: str, endpoint: str, params: Optional[Dict] = None,
                  json_data: Optional[Dict] = None, stream: bool = False,
-                 allow_redirects: bool = True, timeout: int = 30) -> Union[Dict[str, Any], requests.Response, None]:
-        url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
+                 allow_redirects: bool = True, timeout: int = 30, domain: Optional[str] = None) -> Union[Dict[str, Any], requests.Response, None]:
+        base_url = f"https://{domain}/api/v1" if domain else self.BASE_URL
+        url = f"{base_url}/{endpoint.lstrip('/')}"
         request_headers = self._get_request_headers(method, json_data is not None)
         try:
             response = requests.request(
@@ -67,7 +68,9 @@ class CivitaiAPI:
     def search_models(self, query: str, types: Optional[List[str]] = None,
                       sort: str = 'Highest Rated', period: str = 'AllTime',
                       limit: int = 20, page: int = 1,
-                      nsfw: Optional[bool] = None) -> Optional[Dict[str, Any]]:
+                      nsfw: Optional[bool] = None,
+                      username: Optional[str] = None,
+                      domain: str = "civitai.com") -> Optional[Dict[str, Any]]:
         endpoint = "/models"
         params = {
             "limit": max(1, min(100, limit)),
@@ -80,7 +83,9 @@ class CivitaiAPI:
             params["types"] = types
         if nsfw is not None:
             params["nsfw"] = str(nsfw).lower()
-        result = self._request("GET", endpoint, params=params)
+        if username:
+            params["username"] = username
+        result = self._request("GET", endpoint, params=params, domain=domain)
         if isinstance(result, dict) and "error" in result:
             return result
         if isinstance(result, dict) and "items" in result and "metadata" in result:
@@ -91,8 +96,10 @@ class CivitaiAPI:
                             base_models: Optional[List[str]] = None,
                             sort: str = 'metrics.downloadCount:desc',
                             limit: int = 20, page: int = 1,
-                            nsfw: Optional[bool] = None) -> Optional[Dict[str, Any]]:
-        meili_url = "https://search.civitai.com/multi-search"
+                            nsfw: Optional[bool] = None,
+                            username: Optional[str] = None,
+                            domain: str = "civitai.com") -> Optional[Dict[str, Any]]:
+        meili_url = f"https://search.{domain}/multi-search"
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer 8c46eb2508e21db1e9828a97968d91ab1ca1caa5f70a00e88a2ba1e286603b61'
@@ -118,6 +125,8 @@ class CivitaiAPI:
             filter_groups.append(base_model_filters)
         if nsfw is None or nsfw is False:
             filter_groups.append("nsfwLevel IN [1, 2, 4]")
+        if username:
+            filter_groups.append([f'"user.username"="{username}"'])
         filter_groups.append("availability = Public")
         payload = {
             "queries": [{
