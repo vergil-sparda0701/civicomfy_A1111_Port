@@ -446,9 +446,11 @@ def register_routes(app):
             page = int(data.get("page", 1))
             api_key = resolve_api_key(data)
             nsfw = data.get("nsfw", None)
+            username = (data.get("username") or "").strip()
+            domain = (data.get("domain") or "civitai.com").strip()
 
-            if not query and not model_type_keys and not base_model_filters:
-                return JSONResponse({"error": "Search requires a query or filter."}, status_code=400)
+            if not query and not model_type_keys and not base_model_filters and not username:
+                return JSONResponse({"error": "Search requires a query, filter or username."}, status_code=400)
 
             api = CivitaiAPI(api_key)
             api_types_filter = []
@@ -468,7 +470,9 @@ def register_routes(app):
                 sort=sort,
                 limit=limit,
                 page=page,
-                nsfw=nsfw
+                nsfw=nsfw,
+                username=username or None,
+                domain=domain
             )
 
             if meili_results and isinstance(meili_results, dict) and "error" in meili_results:

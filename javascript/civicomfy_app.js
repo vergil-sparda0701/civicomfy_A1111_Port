@@ -259,6 +259,7 @@
     <div id="civicomfy-tab-search" class="civicomfy-tab-content">
       <div class="civicomfy-search-controls">
         <input type="text" id="civicomfy-search-query" class="civicomfy-input" placeholder='Ej: "morrigan outfit daniel20019" — detecta creador automáticamente'>
+        <input type="text" id="civicomfy-search-username" class="civicomfy-input" placeholder="Username (Optional)" style="flex:1;min-width:140px;">
         <select id="civicomfy-search-type" class="civicomfy-select"><option value="any">Any Type</option></select>
         <select id="civicomfy-search-base-model" class="civicomfy-select"><option value="any">Any Base Model</option></select>
         <select id="civicomfy-search-sort" class="civicomfy-select">
@@ -496,13 +497,29 @@
         const hintEl = overlay.querySelector('#civicomfy-search-parse-hint');
         const rawQuery = overlay.querySelector('#civicomfy-search-query').value.trim();
 
+        const explicitUsername = overlay.querySelector('#civicomfy-search-username').value.trim();
+        let queryToUse = rawQuery;
+        let userToUse = explicitUsername;
+        let usedSmartParser = false;
+
         const parsed = (searchPagination.currentPage === 1 || !lastParsed)
             ? parseSearchQuery(rawQuery)
             : lastParsed;
-        if (searchPagination.currentPage === 1) lastParsed = parsed;
+        
+        if (!explicitUsername) {
+            if (searchPagination.currentPage === 1) lastParsed = parsed;
+            if (parsed.parsed) {
+                queryToUse = parsed.query;
+                userToUse = parsed.username;
+                usedSmartParser = true;
+            }
+        } else {
+            lastParsed = null;
+        }
 
         if (hintEl) {
-            if (parsed.parsed) { hintEl.innerHTML = parsed.hint; hintEl.style.display = ''; }
+            if (usedSmartParser) { hintEl.innerHTML = parsed.hint; hintEl.style.display = ''; }
+            else if (explicitUsername) { hintEl.innerHTML = `🔍 Buscando <strong>"${escHtml(queryToUse)}"</strong> del creador <strong>"${escHtml(explicitUsername)}"</strong>`; hintEl.style.display = ''; }
             else hintEl.style.display = 'none';
         }
 
@@ -514,7 +531,7 @@
         const baseModelVal = overlay.querySelector('#civicomfy-search-base-model').value;
 
         const params = {
-            query: parsed.query || rawQuery,
+            query: queryToUse,
             model_types: typeVal === 'any' ? [] : [typeVal],
             base_models: baseModelVal === 'any' ? [] : [baseModelVal],
             sort: overlay.querySelector('#civicomfy-search-sort').value,
@@ -522,16 +539,18 @@
             page: searchPagination.currentPage,
             api_key: settings.apiKey,
             nsfw: settings.hideMatureInSearch ? false : null,
+            domain: settings.preferredDomain || 'civitai.com'
         };
-        if (parsed.username) params.username = parsed.username;
+        if (userToUse) params.username = userToUse;
 
         try {
             let response = await API.searchModels(params);
             if (!response || !response.metadata || !Array.isArray(response.items)) throw new Error('Invalid response');
 
             // Fallback: if creator filter yielded no results, retry without it
-            if (response.items.length === 0 && parsed.username) {
-                hintEl.innerHTML = `⚠️ Sin resultados para el creador <strong>"${escHtml(parsed.username)}"</strong>. Mostrando resultados generales para <strong>"${escHtml(parsed.query)}"</strong>.`;
+            if (response.items.length === 0 && userToUse) {
+                hintEl.innerHTML = `⚠️ Sin resultados para el creador <strong>"${escHtml(userToUse)}"</strong>. Mostrando resultados generales para <strong>"${escHtml(queryToUse)}"</strong>.`;
+                hintEl.style.display = '';
                 const fallbackParams = { ...params };
                 delete fallbackParams.username;
                 response = await API.searchModels(fallbackParams);
